@@ -11,6 +11,7 @@
 from copy import deepcopy
 
 from elasticsearch.exceptions import NotFoundError
+from elasticsearch_dsl import A
 from invenio_accounts.models import SessionActivity, User, userrole
 from invenio_circulation.api import Loan
 from invenio_circulation.proxies import current_circulation
@@ -29,7 +30,8 @@ from invenio_app_ils.patrons.api import (Patron, SystemAgent,
                                          get_patron_or_unknown)
 
 from .acquisition.search import OrderSearch
-from .circulation.search import get_loans_by_patron_pid
+from .circulation.search import (get_active_loans_by_patron_pid,
+                                 get_loans_by_patron_pid)
 from .document_requests.search import DocumentRequestSearch
 from .ill.search import BorrowingRequestsSearch
 from .patrons.indexer import PatronIndexer
@@ -103,7 +105,7 @@ def anonymize_patron_data(patron_pid, force=False):
     # Serialize empty patron values
     anonymous_patron_fields = get_anonymous_patron_dict(patron_pid)
 
-    patron_loans = get_loans_by_patron_pid(patron_pid).execute()
+    patron_loans = get_loans_by_patron_pid(patron_pid).scan()
 
     indices = 0
 

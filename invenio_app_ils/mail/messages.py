@@ -13,6 +13,7 @@ from flask import current_app
 from flask_mail import Message
 from jinja2.exceptions import TemplateError
 
+from invenio_app_ils.circulation.search import get_active_loans_by_patron_pid
 from invenio_app_ils.proxies import current_app_ils
 from invenio_app_ils.records.jsonresolvers.api import pick
 
@@ -20,9 +21,13 @@ from invenio_app_ils.records.jsonresolvers.api import pick
 class BlockTemplatedMessage(Message):
     """Templated message using Jinja2 blocks."""
 
-    FOOTER_TEMPLATE = "invenio_app_ils/mail/footer.html"
-
-    def __init__(self, template, ctx={}, **kwargs):
+    def __init__(
+        self,
+        template,
+        footer_template="invenio_app_ils/mail/footer.html",
+        ctx={},
+        **kwargs
+    ):
         """Build message body and HTML based on the provided template.
 
         The template needs to provide two blocks: subject and body. An optional
@@ -37,12 +42,14 @@ class BlockTemplatedMessage(Message):
         self.template = template
         self.id = str(uuid.uuid4())
 
-        ctx.update(dict(
-            spa_routes=dict(
-                HOST=current_app.config["SPA_HOST"],
-                PATHS=current_app.config["SPA_PATHS"],
-            ),
-        ))
+        ctx.update(
+            dict(
+                spa_routes=dict(
+                    HOST=current_app.config["SPA_HOST"],
+                    PATHS=current_app.config["SPA_PATHS"],
+                ),
+            )
+        )
         self.ctx = ctx
 
         tmpl = current_app.jinja_env.get_template(template)
@@ -53,7 +60,7 @@ class BlockTemplatedMessage(Message):
         except TemplateError:
             kwargs["html"] = kwargs["body"]
 
-        footer_tmpl = current_app.jinja_env.get_template(self.FOOTER_TEMPLATE)
+        footer_tmpl = current_app.jinja_env.get_template(footer_template)
         footer_plain = self.render_block(footer_tmpl, "footer_plain")
         try:
             footer_html = self.render_block(footer_tmpl, "footer_html")
@@ -130,3 +137,16 @@ def get_common_message_ctx(record):
         )
 
     return message_ctx
+
+
+def get_patron_and_active_loans(patron_pid):
+    """Get common context for emails with list of ongoing loans."""
+    Patron = current_app_ils.patron_cls
+    patron = Patron.get_patron(patron_pid)
+
+    loans = [
+        loan.to_dict()
+        for loan in get_active_loans_by_patron_pid(patron_pid).scan()
+    ]
+
+    return patron, loans
