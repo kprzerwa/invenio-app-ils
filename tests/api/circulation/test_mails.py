@@ -17,14 +17,14 @@ from invenio_circulation.proxies import current_circulation
 from invenio_indexer.api import RecordIndexer
 from invenio_search import current_search
 
-from invenio_app_ils.circulation.tasks import send_active_loans_mail
-from invenio_app_ils.patrons.api import Patron
-from tests.helpers import user_login
-
 from invenio_app_ils.circulation.mail.tasks import (  # isort:skip
     send_expiring_loans_mail_reminder,
     send_overdue_loans_mail_reminder,
 )
+from invenio_app_ils.circulation.tasks import \
+    send_active_loans_mail
+from invenio_app_ils.patrons.api import Patron
+from tests.helpers import user_login
 
 
 def test_email_on_loan_checkout(

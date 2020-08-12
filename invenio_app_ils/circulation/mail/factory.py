@@ -26,10 +26,7 @@ def loan_message_creator_factory():
 def loan_list_message_creator_factory():
     """Loan list message factory creator."""
     return partial(
-        message_factory,
-        (
-            "invenio_app_ils.circulation.mail.factory:default_loan_list_message_creator"
-        ),
+        message_factory, current_app.config["ILS_CIRCULATION_LOANS_MAIL_MSG_CREATOR"]
     )
 
 
